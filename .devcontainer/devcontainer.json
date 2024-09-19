@@ -1,0 +1,215 @@
+isim: CI
+
+açık: [itme, çekme_isteği]
+
+işler:
+  tiftik:
+    çalışır: ubuntu-latest
+    konteyner:
+      resim: python:3.11
+      çevre:
+        KULLANICI: root
+
+    adımlar:
+
+    - koş: |
+        apt-get güncellemesi
+        apt-get install --yes --no-install-önerilir \
+          postgresql-istemcisi \
+          g++ \
+          libarchive-dev \
+          libboost-python-geliştirme \
+          libosmpbf-dev \
+          libprotobuf-dev \
+          yapmak \
+          pkg-yapılandırma \
+          protobuf-derleyicisi \
+          ozmoz \
+          cmake \
+          ekstra-cmake-modülleri \
+          qtbase5-dev \
+          esnek \
+          bizon
+
+    - kullanımlar: actions/checkout@v4
+
+    - adı: Kurulum ortamı
+      koş: |
+        # tmp dosyaları için kullanılan yolları yapılandır
+        mkdir -p /data/work/$USER /data/work/$USER/cache
+        chown $USER /data/work/$USER /data/work/$USER/cache
+        # osm pbf ayrıştırıcısını derle
+        cd modülleri/osm_pbf_parser && make && cd ../../
+
+    - name: Python'u kurun ${{ matrix.python-version }}
+      kullanımlar: actions/setup-python@v5
+      ile:
+        python sürümü: ${{ matrix.python sürümü }}
+
+    - name: Bağımlılıkları yükle
+      koş: |
+        python -m pip kurulum --yükseltme pip
+        pip install -r gereksinimleri.txt
+
+    - isim: Lint
+      koş: |
+        ./tools/pytest.sh tüy
+
+    - isim: MyPy
+      koş: |
+        ./araçlar/pytest.sh mypy
+
+  testler:
+    çalışır: ubuntu-latest
+    konteyner:
+      resim: python:3.11
+      çevre:
+        KULLANICI: root
+
+    hizmetler:
+      postgres:
+        resim: postgis/postgis:13-3.0-alpine
+        çevre:
+          POSTGRES_ŞİFRE: -osmoz-
+
+    çevre:
+      VT_ANA BİLGİSAYARI: postgres
+      DB_BASE_TEST: ozmoz
+      PGPŞİFRESİ: -ozmoz-
+
+    adımlar:
+
+    - koş: |
+        apt-get güncellemesi
+        apt-get install --yes --no-install-önerilir \
+          postgresql-istemcisi \
+          g++ \
+          libarchive-dev \
+          libboost-python-geliştirme \
+          libosmpbf-dev \
+          libprotobuf-dev \
+          yapmak \
+          pkg-yapılandırma \
+          protobuf-derleyicisi \
+          ozmoz \
+          cmake \
+          ekstra-cmake-modülleri \
+          qtbase5-dev \
+          esnek \
+          bizon
+
+    - kullanımlar: actions/checkout@v4
+
+    - adı: Kurulum ortamı
+      koş: |
+        # tmp dosyaları için kullanılan yolları yapılandır
+        mkdir -p /data/work/$USER /data/work/$USER/cache
+        chown $USER /data/work/$USER /data/work/$USER/cache
+        # osm pbf ayrıştırıcısını derle
+        cd modülleri/osm_pbf_parser && make && cd ../../
+
+    - name: Python'u kurun ${{ matrix.python-version }}
+      kullanımlar: actions/setup-python@v5
+      ile:
+        python sürümü: ${{ matrix.python sürümü }}
+
+    - name: Bağımlılıkları yükle
+      koş: |
+        python -m pip kurulum --yükseltme pip
+        pip install -r gereksinimleri.txt
+
+    - adı: Postgres'i Başlat
+      koş: |
+        psql -h postgres -U postgres postgres -c 'osmose KULLANICISI OLUŞTUR;'
+        psql -h postgres -U postgres postgres -c "osmose KULLANICISINI ŞİFRE '-osmose-' İLE DEĞİŞTİR;"
+        psql -h postgres -U postgres postgres -c 'VERİTABANI OLUŞTUR osmose;'
+        psql -h postgres -U postgres postgres -c 'OSMOSE veritabanındaki HER ŞEYİ OSMOS'A İZİN VER;'
+        psql -h postgres -U postgres osmose -c 'VARSA UZANTI OLUŞTUR hstore; VARSA UZANTI OLUŞTUR fuzzystrmatch; VARSA UZANTI OLUŞTUR unaccent; VARSA UZANTI OLUŞTUR postgis;'
+        psql -h postgres -U postgres osmose -c "osmose'a spatial_ref_sys tablosunda SEÇME, GÜNCELLEME, SİLME izni ver;"
+        psql -h postgres -U postgres osmose -c "osmose'a geometry_columns tablosunda SEÇME, GÜNCELLEME, SİLME, EKLEME İZNİ VER;"
+
+    - isim: Birleştir
+      koş: |
+        ./tools/pytest.sh birleştirme
+
+    - isim: Diğer
+      koş: |
+        ./tools/pytest.sh diğer
+
+  isteğe_bağlı_testler:
+    çalışır: ubuntu-latest
+    konteyner:
+      resim: python:3.11
+      çevre:
+        KULLANICI: root
+
+    hizmetler:
+      postgres:
+        resim: postgis/postgis:13-3.0-alpine
+        çevre:
+          POSTGRES_ŞİFRE: -osmoz-
+
+    çevre:
+      VT_ANA BİLGİSAYARI: postgres
+      DB_BASE_TEST: ozmoz
+      PGPŞİFRESİ: -ozmoz-
+
+    adımlar:
+
+    - koş: |
+        apt-get güncellemesi
+        apt-get install --yes --no-install-önerilir \
+          postgresql-istemcisi \
+          g++ \
+          libarchive-dev \
+          libboost-python-geliştirme \
+          libosmpbf-dev \
+          libprotobuf-dev \
+          yapmak \
+          pkg-yapılandırma \
+          protobuf-derleyicisi \
+          ozmoz \
+          cmake \
+          ekstra-cmake-modülleri \
+          qtbase5-dev \
+          esnek \
+          bizon
+
+    - kullanımlar: actions/checkout@v4
+
+    - adı: Kurulum ortamı
+      koş: |
+        # tmp dosyaları için kullanılan yolları yapılandır
+        mkdir -p /data/work/$USER /data/work/$USER/cache
+        chown $USER /data/work/$USER /data/work/$USER/cache
+        # osm pbf ayrıştırıcısını derle
+        cd modülleri/osm_pbf_parser && make && cd .j.son/python../
+
+    - name: Python'u kurun ${{ matrix.python-version }}
+      kullanımlar: actions/setup-python@v5
+      ile:
+        python sürümü: ${{ matrix.python sürümü }}
+
+    - name: Bağımlılıkları yükle
+      koş: |
+        python -m pip kurulum --yükseltme pip
+        pip install -r gereksinimleri.txt
+
+    - adı: Postgres'i Başlat
+      koş: |
+        psql -h postgres -U postgres postgres -c 'osmose KULLANICISI OLUŞTUR;'
+        psql -h postgres -U postgres postgres -c "osmose KULLANICISINI ŞİFRE '-osmose-' İLE DEĞİŞTİR;"
+        psql -h postgres -U postgres postgres -c 'VERİTABANI OLUŞTUR osmose;'
+        psql -h postgres -U postgres postgres -c 'OSMOSE veritabanındaki HER ŞEYİ OSMOS'A İZİN VER;'
+        psql -h postgres -U postgres osmose -c 'VARSA UZANTI OLUŞTUR hstore; VARSA UZANTI OLUŞTUR fuzzystrmatch; VARSA UZANTI OLUŞTUR unaccent; VARSA UZANTI OLUŞTUR postgis;'
+        psql -h postgres -U postgres osmose -c "osmose'a spatial_ref_sys tablosunda SEÇME, GÜNCELLEME, SİLME izni ver;"
+        psql -h postgres -U postgres osmose -c "osmose'a geometry_columns tablosunda SEÇME, GÜNCELLEME, SİLME, EKLEME İZNİ VER;"
+
+    - isim: SAX
+      koş: |
+        ./araçlar/pytest.sh saksafon
+      hata durumunda devam et: doğru{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+  }
+}
